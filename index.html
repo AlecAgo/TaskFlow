@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0c10" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f5f6fa" media="(prefers-color-scheme: light)" />
+  <title>FocusFlow — Tasks & Calendar</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar" role="banner">
+      <div class="topbar__left">
+        <button class="icon-btn" id="navPrev" aria-label="Previous section" title="Previous">
+          <span class="icon" aria-hidden="true">❮</span>
+        </button>
+      </div>
+
+      <div class="topbar__center">
+        <div class="titleblock">
+          <div class="titleblock__title" id="pageTitle">Tasks</div>
+          <div class="titleblock__subtitle" id="pageSubtitle">Stay in flow. Tap + to add.</div>
+        </div>
+        <div class="pager" aria-label="Sections">
+          <button class="pager__dot is-active" data-page="0" aria-label="Tasks section"></button>
+          <button class="pager__dot" data-page="1" aria-label="Calendar section"></button>
+        </div>
+      </div>
+
+      <div class="topbar__right">
+        <button class="icon-btn" id="navNext" aria-label="Next section" title="Next">
+          <span class="icon" aria-hidden="true">❯</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="viewport" id="viewport" role="main" aria-live="polite">
+      <section class="page page--tasks" data-page="0" aria-label="Tasks">
+        <div class="glasscard">
+          <div class="toolbar">
+            <div class="seg" role="tablist" aria-label="Task filters">
+              <button class="seg__btn is-active" data-filter="all" role="tab" aria-selected="true">All</button>
+              <button class="seg__btn" data-filter="active" role="tab" aria-selected="false">Active</button>
+              <button class="seg__btn" data-filter="completed" role="tab" aria-selected="false">Completed</button>
+            </div>
+            <div class="toolbar__actions">
+              <button class="pill" id="manageCategoriesBtn" title="Manage categories">Categories</button>
+              <button class="pill pill--primary" id="addTaskBtn" title="Add a new task">
+                <span class="icon" aria-hidden="true">＋</span> New Task
+              </button>
+            </div>
+          </div>
+
+          <div class="stats" id="taskStats"></div>
+
+          <div class="list" id="taskList" aria-label="Task list"></div>
+          <div class="empty" id="taskEmpty" hidden>
+            <div class="empty__emoji">✨</div>
+            <div class="empty__title">No tasks here</div>
+            <div class="empty__text">Add one, or switch filters. Your future self will thank you.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page page--calendar" data-page="1" aria-label="Calendar">
+        <div class="glasscard">
+          <div class="cal">
+            <div class="cal__header">
+              <div class="cal__nav">
+                <button class="icon-btn" id="monthPrev" aria-label="Previous month" title="Previous month">❮</button>
+                <button class="icon-btn" id="monthToday" aria-label="Go to today" title="Today">Today</button>
+                <button class="icon-btn" id="monthNext" aria-label="Next month" title="Next month">❯</button>
+              </div>
+              <div class="cal__title" id="monthTitle">Month</div>
+              <div class="cal__actions">
+                <button class="pill pill--primary" id="addEventBtn" title="Add event">
+                  <span class="icon" aria-hidden="true">＋</span> New Event
+                </button>
+              </div>
+            </div>
+
+            <div class="cal__grid" id="calendarGrid" aria-label="Month calendar"></div>
+
+            <aside class="drawer" id="dayDrawer" aria-label="Selected day">
+              <div class="drawer__top">
+                <div>
+                  <div class="drawer__date" id="drawerDate">—</div>
+                  <div class="drawer__hint" id="drawerHint">Events and due tasks appear here.</div>
+                </div>
+                <button class="icon-btn" id="drawerClose" aria-label="Close">✕</button>
+              </div>
+
+              <div class="drawer__section">
+                <div class="drawer__sectionTitle">Events</div>
+                <div class="drawer__list" id="drawerEvents"></div>
+                <div class="empty small" id="drawerEventsEmpty" hidden>
+                  <div class="empty__text">No events for this day.</div>
+                </div>
+              </div>
+
+              <div class="drawer__section">
+                <div class="drawer__sectionTitle">Tasks due</div>
+                <div class="drawer__list" id="drawerTasks"></div>
+                <div class="empty small" id="drawerTasksEmpty" hidden>
+                  <div class="empty__text">No due tasks for this day.</div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bottombar" role="contentinfo">
+      <div class="bottombar__left">
+        <span class="chip" id="storageChip" title="Data stored locally in your browser">Local</span>
+      </div>
+      <div class="bottombar__right">
+        <button class="chip" id="exportBtn" title="Export your data">Export</button>
+        <button class="chip" id="importBtn" title="Import data">Import</button>
+        <input type="file" id="importFile" accept="application/json" hidden />
+      </div>
+    </footer>
+
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" hidden>
+      <div class="modal__backdrop" data-close="true"></div>
+      <div class="modal__panel" role="document">
+        <div class="modal__header">
+          <div class="modal__title" id="taskModalTitle">New Task</div>
+          <button class="icon-btn" data-close="true" aria-label="Close">✕</button>
+        </div>
+        <form class="form" id="taskForm" autocomplete="off">
+          <label class="field">
+            <span class="field__label">Title</span>
+            <input class="input" name="title" id="taskTitle" placeholder="e.g., Review project plan" required maxlength="120" />
+          </label>
+
+          <div class="row">
+            <label class="field">
+              <span class="field__label">Category</span>
+              <select class="select" name="category" id="taskCategory"></select>
+            </label>
+            <label class="field">
+              <span class="field__label">Priority</span>
+              <select class="select" name="priority" id="taskPriority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field">
+              <span class="field__label">Due date</span>
+              <input class="input" type="date" name="dueDate" id="taskDueDate" />
+            </label>
+            <label class="field">
+              <span class="field__label">Notes (optional)</span>
+              <input class="input" name="notes" id="taskNotes" placeholder="Quick details" maxlength="200" />
+            </label>
+          </div>
+
+          <div class="modal__footer">
+            <button type="button" class="pill" id="taskDeleteBtn" hidden>Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="pill" data-close="true">Cancel</button>
+            <button type="submit" class="pill pill--primary" id="taskSaveBtn">Save</button>
+          </div>
+          <input type="hidden" name="id" id="taskId" />
+        </form>
+      </div>
+    </div>
+
+    <!-- Categories Modal -->
+    <div class="modal" id="catModal" role="dialog" aria-modal="true" aria-labelledby="catModalTitle" hidden>
+      <div class="modal__backdrop" data-close="true"></div>
+      <div class="modal__panel" role="document">
+        <div class="modal__header">
+          <div class="modal__title" id="catModalTitle">Categories</div>
+          <button class="icon-btn" data-close="true" aria-label="Close">✕</button>
+        </div>
+
+        <div class="cat">
+          <div class="cat__add">
+            <input class="input" id="catNew" placeholder="Add category…" maxlength="30" />
+            <button class="pill pill--primary" id="catAddBtn">Add</button>
+          </div>
+          <div class="cat__list" id="catList"></div>
+          <div class="hint">Tip: Renaming a category updates existing tasks automatically.</div>
+        </div>
+
+        <div class="modal__footer">
+          <div class="spacer"></div>
+          <button type="button" class="pill" data-close="true">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div class="modal" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle" hidden>
+      <div class="modal__backdrop" data-close="true"></div>
+      <div class="modal__panel" role="document">
+        <div class="modal__header">
+          <div class="modal__title" id="eventModalTitle">New Event</div>
+          <button class="icon-btn" data-close="true" aria-label="Close">✕</button>
+        </div>
+        <form class="form" id="eventForm" autocomplete="off">
+          <label class="field">
+            <span class="field__label">Title</span>
+            <input class="input" name="title" id="eventTitle" placeholder="e.g., Team sync" required maxlength="120" />
+          </label>
+
+          <div class="row">
+            <label class="field">
+              <span class="field__label">Date</span>
+              <input class="input" type="date" name="date" id="eventDate" required />
+            </label>
+            <label class="field">
+              <span class="field__label">Color</span>
+              <select class="select" name="color" id="eventColor">
+                <option value="blue" selected>Blue</option>
+                <option value="pink">Pink</option>
+                <option value="green">Green</option>
+                <option value="orange">Orange</option>
+                <option value="purple">Purple</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field">
+              <span class="field__label">Start</span>
+              <input class="input" type="time" name="startTime" id="eventStart" />
+            </label>
+            <label class="field">
+              <span class="field__label">End</span>
+              <input class="input" type="time" name="endTime" id="eventEnd" />
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field">
+              <span class="field__label">Location (optional)</span>
+              <input class="input" name="location" id="eventLocation" maxlength="80" />
+            </label>
+            <label class="field">
+              <span class="field__label">Notes (optional)</span>
+              <input class="input" name="notes" id="eventNotes" maxlength="200" />
+            </label>
+          </div>
+
+          <div class="modal__footer">
+            <button type="button" class="pill" id="eventDeleteBtn" hidden>Delete</button>
+            <div class="spacer"></div>
+            <button type="button" class="pill" data-close="true">Cancel</button>
+            <button type="submit" class="pill pill--primary" id="eventSaveBtn">Save</button>
+          </div>
+          <input type="hidden" name="id" id="eventId" />
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+  </div>
+
+  <script src="js/app.js" defer></script>
+</body>
+</html>
